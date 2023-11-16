@@ -5,13 +5,12 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-
-import static java.lang.annotation.ElementType.PARAMETER;
 
 public class RandomReviewParameterResolverExtension implements ParameterResolver {
 
@@ -20,9 +19,11 @@ public class RandomReviewParameterResolverExtension implements ParameterResolver
     "Good book with good agenda and good example. I can recommend for everyone");
 
   @Retention(RetentionPolicy.RUNTIME)
-  @Target(PARAMETER)
-  public @interface RandomReview {
+  @Target(ElementType.PARAMETER)
+  public @interface RandomReview{
+
   }
+
 
   @Override
   public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
