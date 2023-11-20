@@ -9,6 +9,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(RandomReviewParameterResolverExtension.class)
 class ReviewVerifierTest {
@@ -48,5 +49,15 @@ class ReviewVerifierTest {
     System.out.println(review);
     boolean result = reviewVerifier.doesMeetQualityStandards(review);
     assertFalse(result, "ReviewVerifier did not detect random bad review");
+  }
+
+  @Test
+  void shouldPassWhenReviewIsGood(){
+    String review = """
+      It is slechts een proeftekst uit het drukkerij- en zetterijwezen. It is de standaard proeftekst in deze bedrijfstak sinds de 16e eeuw, toen een onbekende drukker een zethaak met letters nam en ze door elkaar husselde om een font-catalogus te maken.
+      """;
+
+    boolean result = reviewVerifier.doesMeetQualityStandards(review);
+    assertTrue(result, "ReviewVerifier did not pass a good review");
   }
 }
