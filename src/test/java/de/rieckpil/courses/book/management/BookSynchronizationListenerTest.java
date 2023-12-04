@@ -28,10 +28,21 @@ class BookSynchronizationListenerTest {
 
   @Test
   void shouldRejectBookWhenIsbnIsMalformed() {
+    BookSynchronization bookSynchronization = new BookSynchronization("1234");
+    cut.consumeBookUpdates(bookSynchronization);
+    verifyNoInteractions(openLibraryApiClient, bookRepository);
   }
 
   @Test
   void shouldNotOverrideWhenBookAlreadyExists() {
+
+    BookSynchronization bookSynchronization = new BookSynchronization("1234567890123");
+    when(bookRepository.findByIsbn("1234567890123")).thenReturn(new Book());
+
+    cut.consumeBookUpdates(bookSynchronization);
+
+    verifyNoInteractions(openLibraryApiClient);
+    verify(bookRepository, times(0)).save(ArgumentMatchers.any());
   }
 
   @Test
