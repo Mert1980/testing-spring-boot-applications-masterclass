@@ -1,5 +1,6 @@
 package de.rieckpil.courses.book.management;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -36,8 +37,8 @@ class BookSynchronizationListenerTest {
   @Test
   void shouldNotOverrideWhenBookAlreadyExists() {
 
-    BookSynchronization bookSynchronization = new BookSynchronization("1234567890123");
-    when(bookRepository.findByIsbn("1234567890123")).thenReturn(new Book());
+    BookSynchronization bookSynchronization = new BookSynchronization(VALID_ISBN);
+    when(bookRepository.findByIsbn(VALID_ISBN)).thenReturn(new Book());
 
     cut.consumeBookUpdates(bookSynchronization);
 
@@ -47,6 +48,13 @@ class BookSynchronizationListenerTest {
 
   @Test
   void shouldThrowExceptionWhenProcessingFails() {
+    BookSynchronization bookSynchronization = new BookSynchronization(VALID_ISBN);
+    when(bookRepository.findByIsbn(VALID_ISBN)).thenReturn(null);
+    when(openLibraryApiClient.fetchMetadataForBook(VALID_ISBN)).thenThrow(new RuntimeException("Network timeout"));
+
+    Assertions.assertThrows(RuntimeException.class, () -> cut.consumeBookUpdates(bookSynchronization));
+
+
   }
 
   @Test
