@@ -81,6 +81,18 @@ class ReviewVerifierTest {
     MatcherAssert.assertThat("Lorem Ipsum", Matchers.endsWith("Ipsum"));
     MatcherAssert.assertThat(List.of(1, 2, 3, 4, 5), Matchers.hasSize(5));
     MatcherAssert.assertThat(List.of(1, 2, 3, 4, 5), Matchers.anyOf(Matchers.hasSize(5), Matchers.emptyIterable()));
+  }
 
+  @Test
+  void shouldPassWhenReviewIsGoodAssertJ(){
+    String review = """
+      It is slechts een proeftekst uit het drukkerij- en zetterijwezen. It is de standaard proeftekst in deze bedrijfstak sinds de 16e eeuw, toen een onbekende drukker een zethaak met letters nam en ze door elkaar husselde om een font-catalogus te maken.
+      """;
+
+    boolean result = reviewVerifier.doesMeetQualityStandards(review);
+
+    Assertions.assertThat(result).withFailMessage("ReviewVerifier did not pass good review").isTrue();
+    Assertions.assertThat(List.of(1,2,3,4,5)).hasSizeBetween(1,10);
+    Assertions.assertThat(List.of(1,2,3,4,5)).contains(1).isNotEmpty();
   }
 }
