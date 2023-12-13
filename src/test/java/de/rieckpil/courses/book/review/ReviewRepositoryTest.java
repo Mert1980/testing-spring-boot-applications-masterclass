@@ -18,10 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @DataJpaTest(properties = {
   "spring.flyway.enabled=false",
   "spring.jpa.hibernate.ddl-auto=create-drop",
-  "spring.datasource.driver-class-name=com.p6spy.engine.spy.P6SpyDriver", // P6Spy
+  "spring.datasource.driver-class-name=com.p6spy.engine.spy.P6SpyDriver", // P6Spy intercepts database comm and print out quite nice info
   "spring.datasource.url=jdbc:p6spy:h2:mem:testing;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false" // P6Spy
 })
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE) // tells Data JPA to not populate the embedded database for us
 class ReviewRepositoryTest {
 
   @Autowired
@@ -36,11 +36,43 @@ class ReviewRepositoryTest {
   @Autowired
   private TestEntityManager testEntityManager;
 
+  @BeforeEach
+  void beforeEach(){
+    assertEquals(0, cut.count());
+  }
+
   @Test
   void notNull() throws SQLException {
+    assertNotNull(entityManager);
+    assertNotNull(cut);
+    assertNotNull(dataSource);
+    assertNotNull(testEntityManager);
+
+    System.out.println(dataSource.getConnection().getMetaData().getDatabaseProductName());
+
+    Review review = new Review();
+    review.setContent("Duke");
+    review.setTitle("Review 01");
+    review.setCreatedAt(LocalDateTime.now());
+    review.setRating(5);
+    review.setBook(null);
+    review.setUser(null);
+
+    Review result = cut.save(review);
+    assertNotNull(result.getId());
   }
 
   @Test
   void transactionalSupportTest() {
+    Review review = new Review();
+    review.setContent("Duke");
+    review.setTitle("Review 01");
+    review.setCreatedAt(LocalDateTime.now());
+    review.setRating(5);
+    review.setBook(null);
+    review.setUser(null);
+
+    Review result = cut.save(review);
+    assertNotNull(result.getId());
   }
 }
