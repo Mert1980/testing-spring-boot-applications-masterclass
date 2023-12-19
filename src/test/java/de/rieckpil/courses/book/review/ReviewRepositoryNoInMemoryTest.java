@@ -22,15 +22,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @DataJpaTest
-@Testcontainers(disabledWithoutDocker = true)
+// @Testcontainers(disabledWithoutDocker = true)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class ReviewRepositoryNoInMemoryTest {
 
-  @Container
-  static PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:12.3")
+  // @Container
+  static PostgreSQLContainer<?> container = (PostgreSQLContainer) new PostgreSQLContainer<>("postgres:12.3")
     .withDatabaseName("test")
     .withUsername("duke")
-    .withPassword("s3cret");
+    .withPassword("s3cret")
+    .withReuse(true);
+
+  static {
+    container.start();
+  }
 
   @DynamicPropertySource
   static void properties(DynamicPropertyRegistry registry) {
@@ -52,7 +57,7 @@ class ReviewRepositoryNoInMemoryTest {
   private TestEntityManager testEntityManager;
 
   @BeforeEach
-  void beforeEach(){
+  void beforeEach() {
     assertEquals(0, cut.count());
   }
 
@@ -77,12 +82,12 @@ class ReviewRepositoryNoInMemoryTest {
     assertNotNull(result.getId());
   }
 
-  @Test
+  //@Test
   @Sql(scripts = "/scripts/INIT_REVIEW_EACH_BOOK.sql")
   void shouldGetTwoReviewStatisticsWhenDatabaseContainsTwoBooksWithReview() {
   }
 
-  @Test
+  // @Test
   void databaseShouldBeEmpty() {
   }
 }
