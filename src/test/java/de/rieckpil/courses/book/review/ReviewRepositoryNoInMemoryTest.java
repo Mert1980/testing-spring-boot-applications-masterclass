@@ -1,6 +1,5 @@
 package de.rieckpil.courses.book.review;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -9,6 +8,9 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.PostgreSQLContainer;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,14 +38,27 @@ class ReviewRepositoryNoInMemoryTest {
   @Autowired
   private ReviewRepository cut;
 
-  @BeforeEach
-  void beforeEach() {
-    assertEquals(0, cut.count());
-  }
-
   @Test
   @Sql(scripts = "/scripts/INIT_REVIEW_EACH_BOOK.sql")
   void shouldGetTwoReviewStatisticsWhenDatabaseContainsTwoBooksWithReview() {
+
+      List<ReviewStatistic> result = cut.getReviewStatistics();
+
+      assertEquals(3, cut.count());
+      assertEquals(2, result.size());
+
+      result.forEach(reviewStatistic -> {
+        System.out.println("ReviewStatistic");
+        System.out.println(reviewStatistic.getId());
+        System.out.println(reviewStatistic.getAvg());
+        System.out.println(reviewStatistic.getIsbn());
+        System.out.println(reviewStatistic.getRatings());
+        System.out.println(" ");
+      });
+
+      assertEquals(2, result.get(0).getRatings());
+      assertEquals(2, result.get(0).getId());
+      assertEquals(new BigDecimal("3.00"), result.get(0).getAvg());
 
   }
 }
