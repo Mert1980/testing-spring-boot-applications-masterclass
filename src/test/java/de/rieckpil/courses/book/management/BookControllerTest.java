@@ -1,6 +1,7 @@
 package de.rieckpil.courses.book.management;
 
 import de.rieckpil.courses.config.WebSecurityConfig;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -10,9 +11,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -20,17 +25,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(BookController.class)
-@Import(BookManagementService.class)
+// see https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-2.7-Release-Notes#migrating-from-websecurityconfigureradapter-to-securityfilterchain
+@Import(WebSecurityConfig.class)
 class BookControllerTest {
+
+  @MockBean
+  private BookManagementService bookManagementService;
 
   @Autowired
   private MockMvc mockMvc;
 
-  @MockBean
-  private BookRepository bookRepository;
-
   @Test
   void shouldGetEmptyArrayWhenNoBooksExists() throws Exception {
+    MvcResult mvcResult = this.mockMvc
+      .perform(MockMvcRequestBuilders.get("/api/books")
+        .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON))
+      .andExpect(MockMvcResultMatchers.status().is(200))
+      .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
+      .andExpect(MockMvcResultMatchers.jsonPath("$.size()", Matchers.is(0)))
+      .andDo(MockMvcResultHandlers.print())
+      .andReturn();
+    assertThat(mvcResult.getResponse().getContentAsString()).isEqualTo("[]");
+
   }
 
   @Test
