@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import de.rieckpil.courses.config.WebSecurityConfig;
 import org.hamcrest.Matchers;
+import org.junit.Before;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +35,29 @@ class ReviewControllerTest {
 
   private ObjectMapper objectMapper;
 
+  @BeforeEach
+  public void beforeEach() {
+    this.objectMapper = new ObjectMapper();
+  }
+
   @Test
   void shouldReturnTwentyReviewsWithoutAnyOrderWhenNoParametersAreSpecified() throws Exception {
+
+    ArrayNode result = objectMapper.createArrayNode();
+
+    ObjectNode statistic = objectMapper.createObjectNode();
+    statistic.put("bookId", 1);
+    statistic.put("isbn", "42");
+    statistic.put("avg", 89.3);
+    statistic.put("ratings", 2);
+
+    result.add(statistic);
+
+    when(reviewService.getAllReviews(21, "none")).thenReturn(result);
+
+    this.mockMvc.perform(get("/api/books/reviews"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.size()", Matchers.is(1)));
   }
 
   @Test
