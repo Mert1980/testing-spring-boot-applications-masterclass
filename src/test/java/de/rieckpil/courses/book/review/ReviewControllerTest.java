@@ -75,6 +75,28 @@ class ReviewControllerTest {
 
   @Test
   void shouldCreateNewBookReviewForAuthenticatedUserWithValidPayload() throws Exception {
+    String requestBody =
+      """
+          {
+            "reviewTitle": "Great Java Book!",
+            "reviewContent": "I really like this book!",
+            "rating": 4
+          }
+        """;
+
+    when(reviewService.createBookReview(eq("42"), any(BookReviewRequest.class), eq("duke"), endsWith("spring.io")))
+      .thenReturn(84L);
+
+    this.mockMvc.perform(
+        post("/api/books/{isbn}/reviews", 42)
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(requestBody)
+          .with(jwt()
+            .jwt(builder -> builder.claim("email", "duke@spring.io")
+              .claim("preferred_username", "duke"))))
+      .andExpect(status().isCreated())
+      .andExpect(header().exists("Location"))
+      .andExpect(header().string("Location", Matchers.containsString("/books/42/reviews/84")));
   }
 
   @Test
