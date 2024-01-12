@@ -61,6 +61,55 @@ class OpenLibraryRestTemplateApiClientTest {
 
   @Test
   void shouldReturnBookWhenResultIsSuccessButLackingAllInformation() {
+
+    String response =
+        """
+       {
+        "9780596004651": {
+          "publishers": [
+            {
+              "name": "O'Reilly"
+            }
+          ],
+          "title": "Head second Java",
+          "authors": [
+            {
+              "url": "https://openlibrary.org/authors/OL1400543A/Kathy_Sierra",
+              "name": "Kathy Sierra"
+            }
+          ],
+          "number_of_pages": 42,
+          "cover": {
+            "small": "https://covers.openlibrary.org/b/id/388761-S.jpg",
+            "large": "https://covers.openlibrary.org/b/id/388761-L.jpg",
+            "medium": "https://covers.openlibrary.org/b/id/388761-M.jpg"
+          }
+         }
+       }
+      """;
+
+    this.mockRestServiceServer
+        .expect(requestTo(Matchers.containsString("/api/books")))
+        .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+
+    this.mockRestServiceServer
+        .expect(requestTo(Matchers.containsString("/mert/19")))
+        .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+
+    Book result = cut.fetchMetadataForBook(ISBN);
+
+    assertEquals("9780596004651", result.getIsbn());
+    assertEquals("Head second Java", result.getTitle());
+    assertEquals("https://covers.openlibrary.org/b/id/388761-S.jpg", result.getThumbnailUrl());
+    assertEquals("Kathy Sierra", result.getAuthor());
+    assertEquals("n.A", result.getDescription());
+    assertEquals("n.A", result.getGenre());
+    assertEquals("O'Reilly", result.getPublisher());
+    assertEquals(42, result.getPages());
+
+    assertNull(result.getId());
+
+    // this.mockRestServiceServer.verify();
   }
 
   @Test
