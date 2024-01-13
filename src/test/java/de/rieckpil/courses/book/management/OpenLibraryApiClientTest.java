@@ -30,6 +30,17 @@ class OpenLibraryApiClientTest {
 
   private static String VALID_RESPONSE;
 
+  static {
+    try{
+      VALID_RESPONSE = new String(OpenLibraryApiClientTest
+        .class.getClassLoader()
+        .getResourceAsStream("stubs/openlibrary/success-" + ISBN + ".json")
+        .readAllBytes());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
   @BeforeEach
   public void setup() throws IOException {
 
@@ -59,6 +70,29 @@ class OpenLibraryApiClientTest {
 
   @Test
   void shouldReturnBookWhenResultIsSuccess() throws InterruptedException {
+
+    MockResponse mockResponse = new MockResponse()
+      .addHeader("Content-Type", "application/json; charset=utf-8")
+      .setBody(VALID_RESPONSE);
+
+    this.mockWebServer.enqueue(mockResponse);
+
+    Book result = cut.fetchMetadataForBook(ISBN);
+
+    assertEquals("9780596004651", result.getIsbn());
+    assertEquals("Head first Java", result.getTitle());
+    assertEquals("https://covers.openlibrary.org/b/id/388761-S.jpg", result.getThumbnailUrl());
+    assertEquals("Kathy Sierra", result.getAuthor());
+    assertEquals(
+        "Your brain on Java--a learner's guide--Cover.Includes index.", result.getDescription());
+    assertEquals("Java (Computer program language)", result.getGenre());
+    assertEquals("O'Reilly", result.getPublisher());
+    assertEquals(619, result.getPages());
+
+    assertNull(result.getId());
+
+    RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
+    assertEquals("/api/books?jscmd=data&format=json&bibkeys=" + ISBN, recordedRequest.getPath());
   }
 
   @Test
