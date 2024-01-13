@@ -38,11 +38,11 @@ class OpenLibraryRestTemplateApiClientTest {
 
     this.mockRestServiceServer
       .expect(MockRestRequestMatchers.requestTo(Matchers.containsString(ISBN)))
-        //.expect(MockRestRequestMatchers.requestTo("/api/books?jscmd=data&format=json&bibkeys=" + ISBN))
-        .andRespond(
-            withSuccess(
-                new ClassPathResource("/stubs/openlibrary/success-" + ISBN + ".json"),
-                MediaType.APPLICATION_JSON));
+      //.expect(MockRestRequestMatchers.requestTo("/api/books?jscmd=data&format=json&bibkeys=" + ISBN))
+      .andRespond(
+        withSuccess(
+          new ClassPathResource("/stubs/openlibrary/success-" + ISBN + ".json"),
+          MediaType.APPLICATION_JSON));
 
     Book result = cut.fetchMetadataForBook(ISBN);
 
@@ -51,7 +51,7 @@ class OpenLibraryRestTemplateApiClientTest {
     assertEquals("https://covers.openlibrary.org/b/id/388761-S.jpg", result.getThumbnailUrl());
     assertEquals("Kathy Sierra", result.getAuthor());
     assertEquals(
-        "Your brain on Java--a learner's guide--Cover.Includes index.", result.getDescription());
+      "Your brain on Java--a learner's guide--Cover.Includes index.", result.getDescription());
     assertEquals("Java (Computer program language)", result.getGenre());
     assertEquals("O'Reilly", result.getPublisher());
     assertEquals(619, result.getPages());
@@ -63,38 +63,38 @@ class OpenLibraryRestTemplateApiClientTest {
   void shouldReturnBookWhenResultIsSuccessButLackingAllInformation() {
 
     String response =
-        """
-       {
-        "9780596004651": {
-          "publishers": [
-            {
-              "name": "O'Reilly"
+      """
+         {
+          "9780596004651": {
+            "publishers": [
+              {
+                "name": "O'Reilly"
+              }
+            ],
+            "title": "Head second Java",
+            "authors": [
+              {
+                "url": "https://openlibrary.org/authors/OL1400543A/Kathy_Sierra",
+                "name": "Kathy Sierra"
+              }
+            ],
+            "number_of_pages": 42,
+            "cover": {
+              "small": "https://covers.openlibrary.org/b/id/388761-S.jpg",
+              "large": "https://covers.openlibrary.org/b/id/388761-L.jpg",
+              "medium": "https://covers.openlibrary.org/b/id/388761-M.jpg"
             }
-          ],
-          "title": "Head second Java",
-          "authors": [
-            {
-              "url": "https://openlibrary.org/authors/OL1400543A/Kathy_Sierra",
-              "name": "Kathy Sierra"
-            }
-          ],
-          "number_of_pages": 42,
-          "cover": {
-            "small": "https://covers.openlibrary.org/b/id/388761-S.jpg",
-            "large": "https://covers.openlibrary.org/b/id/388761-L.jpg",
-            "medium": "https://covers.openlibrary.org/b/id/388761-M.jpg"
-          }
+           }
          }
-       }
-      """;
+        """;
 
     this.mockRestServiceServer
-        .expect(requestTo(Matchers.containsString("/api/books")))
-        .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+      .expect(requestTo(Matchers.containsString("/api/books")))
+      .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
 
     this.mockRestServiceServer
-        .expect(requestTo(Matchers.containsString("/mert/19")))
-        .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+      .expect(requestTo(Matchers.containsString("/mert/19")))
+      .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
 
     Book result = cut.fetchMetadataForBook(ISBN);
 
@@ -114,6 +114,9 @@ class OpenLibraryRestTemplateApiClientTest {
 
   @Test
   void shouldPropagateExceptionWhenRemoteSystemIsDown() {
+    this.mockRestServiceServer.expect(requestTo(("/api/books?jscmd=data&format=json&bibkeys=" + ISBN)))
+      .andRespond(MockRestResponseCreators.withServerError());
+    assertThrows(HttpServerErrorException.class, () -> cut.fetchMetadataForBook(ISBN));
   }
 
   @Test
