@@ -6,8 +6,6 @@ import io.netty.handler.timeout.WriteTimeoutHandler;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-import org.junit.Before;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -18,7 +16,10 @@ import reactor.netty.tcp.TcpClient;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static reactor.netty.tcp.TcpClient.create;
 
 class OpenLibraryApiClientTest {
@@ -31,7 +32,7 @@ class OpenLibraryApiClientTest {
   private static String VALID_RESPONSE;
 
   static {
-    try{
+    try {
       VALID_RESPONSE = new String(OpenLibraryApiClientTest
         .class.getClassLoader()
         .getResourceAsStream("stubs/openlibrary/success-" + ISBN + ".json")
@@ -84,7 +85,7 @@ class OpenLibraryApiClientTest {
     assertEquals("https://covers.openlibrary.org/b/id/388761-S.jpg", result.getThumbnailUrl());
     assertEquals("Kathy Sierra", result.getAuthor());
     assertEquals(
-        "Your brain on Java--a learner's guide--Cover.Includes index.", result.getDescription());
+      "Your brain on Java--a learner's guide--Cover.Includes index.", result.getDescription());
     assertEquals("Java (Computer program language)", result.getGenre());
     assertEquals("O'Reilly", result.getPublisher());
     assertEquals(619, result.getPages());
@@ -99,36 +100,36 @@ class OpenLibraryApiClientTest {
   void shouldReturnBookWhenResultIsSuccessButLackingAllInformation() {
 
     String response =
-        """
-       {
-        "9780596004651": {
-          "publishers": [
-            {
-              "name": "O'Reilly"
+      """
+         {
+          "9780596004651": {
+            "publishers": [
+              {
+                "name": "O'Reilly"
+              }
+            ],
+            "title": "Head second Java",
+            "authors": [
+              {
+                "url": "https://openlibrary.org/authors/OL1400543A/Kathy_Sierra",
+                "name": "Kathy Sierra"
+              }
+            ],
+            "number_of_pages": 42,
+            "cover": {
+              "small": "https://covers.openlibrary.org/b/id/388761-S.jpg",
+              "large": "https://covers.openlibrary.org/b/id/388761-L.jpg",
+              "medium": "https://covers.openlibrary.org/b/id/388761-M.jpg"
             }
-          ],
-          "title": "Head second Java",
-          "authors": [
-            {
-              "url": "https://openlibrary.org/authors/OL1400543A/Kathy_Sierra",
-              "name": "Kathy Sierra"
-            }
-          ],
-          "number_of_pages": 42,
-          "cover": {
-            "small": "https://covers.openlibrary.org/b/id/388761-S.jpg",
-            "large": "https://covers.openlibrary.org/b/id/388761-L.jpg",
-            "medium": "https://covers.openlibrary.org/b/id/388761-M.jpg"
-          }
+           }
          }
-       }
-      """;
+        """;
 
     this.mockWebServer.enqueue(
-        new MockResponse()
-            .addHeader("Content-Type", "application/json; charset=utf-8")
-            .setResponseCode(200)
-            .setBody(response));
+      new MockResponse()
+        .addHeader("Content-Type", "application/json; charset=utf-8")
+        .setResponseCode(200)
+        .setBody(response));
 
     Book result = cut.fetchMetadataForBook(ISBN);
 
@@ -146,9 +147,34 @@ class OpenLibraryApiClientTest {
 
   @Test
   void shouldPropagateExceptionWhenRemoteSystemIsDown() {
+    this.mockWebServer.enqueue(new MockResponse()
+      .setResponseCode(500)
+      .setBody("Sorry, system is down :("));
+
+    assertThrows(RuntimeException.class, () -> cut.fetchMetadataForBook(ISBN));
   }
 
   @Test
   void shouldRetryWhenRemoteSystemIsSlowOrFailing() {
+    this.mockWebServer.enqueue(new MockResponse()
+      .setResponseCode(500)
+      .setBody("Sorry, system is down :("));
+
+    this.mockWebServer.enqueue(
+      new MockResponse()
+        .addHeader("Content-Type", "application/json; charset=utf-8")
+        .setResponseCode(200)
+        .setBody(VALID_RESPONSE)
+        .setBodyDelay(2, TimeUnit.SECONDS));
+
+    this.mockWebServer.enqueue(
+      new MockResponse()
+        .addHeader("Content-Type", "application/json; charset=utf-8")
+        .setResponseCode(200)
+        .setBody(VALID_RESPONSE));
+
+    Book result = cut.fetchMetadataForBook(ISBN);
+    assertEquals("9780596004651", result.getIsbn());
+    assertNull(result.getId());
   }
 }
