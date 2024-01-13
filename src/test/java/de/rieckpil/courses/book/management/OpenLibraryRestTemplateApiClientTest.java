@@ -121,5 +121,16 @@ class OpenLibraryRestTemplateApiClientTest {
 
   @Test
   void shouldContainCorrectHeadersWhenRemoteSystemIsInvoked() {
+    this.mockRestServiceServer
+      .expect(MockRestRequestMatchers.requestTo("/api/books?jscmd=data&format=json&bibkeys=" + ISBN))
+      .andExpect(MockRestRequestMatchers.header("X-Custom-Auth", "Duke42"))
+      .andExpect(MockRestRequestMatchers.header("X-Customer-Id", "42"))
+      .andRespond(
+        withSuccess(
+          new ClassPathResource("/stubs/openlibrary/success-" + ISBN + ".json"),
+          MediaType.APPLICATION_JSON));
+
+    Book result = cut.fetchMetadataForBook(ISBN);
+    assertNotNull(result);
   }
 }
