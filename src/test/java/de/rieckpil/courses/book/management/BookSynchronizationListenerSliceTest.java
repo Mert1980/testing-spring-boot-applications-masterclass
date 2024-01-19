@@ -4,6 +4,7 @@ import io.awspring.cloud.autoconfigure.core.AwsAutoConfiguration;
 import io.awspring.cloud.autoconfigure.core.CredentialsProviderAutoConfiguration;
 import io.awspring.cloud.autoconfigure.core.RegionProviderAutoConfiguration;
 import io.awspring.cloud.autoconfigure.sqs.SqsAutoConfiguration;
+import io.awspring.cloud.sqs.operations.SqsTemplate;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +26,12 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
+import static org.awaitility.Awaitility.given;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.SQS;
 
 @ExtendWith(SpringExtension.class)
@@ -35,7 +41,7 @@ import static org.testcontainers.containers.localstack.LocalStackContainer.Servi
   CredentialsProviderAutoConfiguration.class,
   RegionProviderAutoConfiguration.class,
   AwsAutoConfiguration.class,
-  SqsAutoConfiguration.class
+  SqsAutoConfiguration.class,
 })
 @Testcontainers(disabledWithoutDocker = true)
 class BookSynchronizationListenerSliceTest {
@@ -43,11 +49,13 @@ class BookSynchronizationListenerSliceTest {
   private static final Logger LOG = LoggerFactory.getLogger(BookSynchronizationListenerSliceTest.class);
 
   @Container
-  static LocalStackContainer localStack = new LocalStackContainer(DockerImageName.parse("localstack/localstack:0.14.5"))
-    .withServices(LocalStackContainer.Service.SQS)
-    // can be removed with version 0.12.17 as LocalStack now has multi-region support https://docs.localstack.cloud/localstack/configuration/#deprecated
-    // .withEnv("DEFAULT_REGION", "eu-central-1")
-    .withLogConsumer(new Slf4jLogConsumer(LOG));
+  static LocalStackContainer localStack =
+      new LocalStackContainer(DockerImageName.parse("localstack/localstack:2.2.0"))
+          .withServices(LocalStackContainer.Service.SQS)
+          // can be removed with version 0.12.17 as LocalStack now has multi-region support
+          // https://docs.localstack.cloud/localstack/configuration/#deprecated
+          // .withEnv("DEFAULT_REGION", "eu-central-1")
+          .withLogConsumer(new Slf4jLogConsumer(LOG));
 
   private static final String QUEUE_NAME = UUID.randomUUID().toString();
   private static final String ISBN = "9780596004651";
@@ -69,17 +77,28 @@ class BookSynchronizationListenerSliceTest {
   @Autowired
   private BookSynchronizationListener cut;
 
-  @MockBean
-  private BookRepository bookRepository;
+  @Autowired private SqsTemplate sqsTemplate;
 
   @MockBean
   private OpenLibraryApiClient openLibraryApiClient;
 
+  @MockBean
+  private BookRepository bookRepository;
+
+
   @Test
   void shouldStartSQS() {
+    assertNotNull(cut);
   }
 
   @Test
   void shouldConsumeMessageWhenPayloadIsCorrect() {
+      sqsTemplate.send(QUEUE_NAME, new BookSynchronization(ISBN));
+
+      when(bookRepository.findByIsbn(ISBN)).thenReturn(new Book());
+
+      given()
+        .await()
+        .atMost(5, TimeUnit.SECONDS).untilAsserted(() -> verify(bookRepository).findByIsbn(ISBN));
   }
 }
